@@ -35,9 +35,9 @@
   </div>
 
   <script>
-    const SUPA_URL = "https://CHO-YoungChil.supabase.co";
+    const SUPA_URL = "https://mohzlkulphbbsbfblvbp.supabase.co";
     const SUPA_KEY = "YdBYMyTRLEgEnES9o";
-    const supabase = supabase.createClient(SUPA_URL, SUPA_KEY);
+    const client = supabase.createClient(SUPA_URL, SUPA_KEY);
 
     const IMAGES = [
       { src: 'tra.jpg', name: '트랄랄레로 트랄랄라' },
@@ -144,7 +144,7 @@
     }
 
     async function storeScore(name, score) {
-      await supabase.from('scores').insert([{ name, score }]);
+      await client.from('scores').insert([{ name, score }]);
     }
 
     async function showRankings() {
