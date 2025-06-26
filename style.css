@@ -1,0 +1,70 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+  margin: 0;
+  padding: 2rem;
+  text-align: center;
+}
+
+input,
+button {
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+button {
+  cursor: pointer;
+}
+
+#image-area {
+  height: 240px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.card {
+  width: 200px;
+  height: 200px;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+#btn-area {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.choice {
+  background: #f6f6f6;
+}
+
+.right {
+  background: #6abe6a;
+  color: #fff !important;
+}
+
+.wrong {
+  background: #e04d4d;
+  color: #fff !important;
+}
+
+.hidden {
+  display: none;
+}
+
+#rank-panel ol {
+  padding-left: 1.2rem;
+  text-align: left;
+  display: inline-block;
+}
