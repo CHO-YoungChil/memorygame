@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<!-- Supabase JS SDK v2 -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<head>
+  <meta charset="UTF-8">
+  <title>🧠 기억력 챌린지</title>
+
+  <!-- PyScript 로더 -->
+  <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ─── 이름 입력 & 점수판 ─── -->
+  <div id="start-panel">
+    <h1>🧠 기억력 챌린지</h1>
+    <p>닉네임을 입력하고 시작!</p>
+    <input id="player-name" placeholder="닉네임" autocomplete="off">
+    <button id="start-btn">게임 시작</button>
+  </div>
+
+  <!-- ─── 게임 영역 ─── -->
+  <div id="game-panel" class="hidden">
+    <h2 id="greet"></h2>
+    <div id="image-area"></div>
+    <div id="btn-area" class="hidden"></div>
+    <p id="score-txt">점수 0 점</p>
+    <button id="end-btn">게임 끝내기</button>
+  </div>
+
+  <!-- ─── 랭킹 보드 ─── -->
+  <div id="rank-panel" class="hidden">
+    <h2>📊 랭킹</h2>
+    <p id="final-score"></p>
+    <h3>오늘의 TOP 5</h3>
+    <ol id="today-list"></ol>
+    <h3>이번 주 TOP 5</h3>
+    <ol id="week-list"></ol>
+    <button onclick="location.reload()">다시 하기</button>
+  </div>
+
+  <!-- ─── PyScript 세팅 ─── -->
+  <py-config>
+    packages = []
+  </py-config>
+
+  <py-script>
+import asyncio, random, json, js
+from datetime import date
+from pyodide.ffi import to_js  # 👈 추가
+# ...
+# ── Supabase 연결 (URL, KEY는 본인 값으로!) ──
+SUPA_URL = "https://mohzlkulphbbsbfblvbp.supabase.co"
+SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vaHpsa3VscGhiYnNiZmJsdmJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1OTAwMzAsImV4cCI6MjA2NjE2NjAzMH0.xflJ71baNaKh34gfxAyM70VR9fY1eVbjNNGBsGKmPQA"
+supa = js.supabase.createClient(SUPA_URL, SUPA_KEY)
+
+
+
+#########################
+#     설정값 & 데이터    #
+#########################
+IMAGES = [
+
+  {"src": "images/트랄랄레로 트랄랄라.jpg",   "name": "트랄랄레로 트랄랄라"},
+  {"src": "images/퉁퉁퉁퉁퉁퉁퉁퉁퉁사후르.jpg",   "name": "퉁퉁퉁퉁퉁퉁퉁퉁퉁사후르"},
+  {"src": "images/브르르 브르르 파타핌.jpg", "name": "브르르 브르르 파타핌"},
+  {"src": "images/봄바르디로 크로코딜로.jpg",   "name": "봄바르디로 크로코딜로"},
+  {"src": "images/보네카 암발라부.jpg","name": "보네카 암발라부"},
+  {"src": "images/리릴리 라릴라.jpg", "name": "리릴리 라릴라"},
+  
+]
+DISPLAY_MS  = 1200           # 한 장당 노출시간 (ms)
+ROUNDS_MAX  = 5              # 라운드 수(정답 시 계속)
+POINTS_EACH = 10             # 정답당 점수
+
+###############
+#   유틸 함수  #
+###############
+def get_ls(key, default):
+    raw = js.window.localStorage.getItem(key)
+    return json.loads(raw) if raw else default
+
+def set_ls(key, value):
+    js.window.localStorage.setItem(key, json.dumps(value))
+
+def iso_week_str(d:date):
+    y,w,_ = d.isocalendar()
+    return f"{y}-{w:02d}"
+
+###################
+#  DOM 단축 변수   #
+###################
+d = js.document
+start_p  = d["start-panel"]
+game_p   = d["game-panel"]
+rank_p   = d["rank-panel"]
+name_in  = d["player-name"]
+greet    = d["greet"]
+img_box  = d["image-area"]
+btn_box  = d["btn-area"]
+scoretxt = d["score-txt"]
+finaltxt = d["final-score"]
+today_ul = d["today-list"]
+week_ul  = d["week-list"]
+
+###################
+#   게임 로직      #
+###################
+player  = {"name": "", "score":0}
+round_n = 0
+sequence = []
+
+def show(elem): elem.classList.remove("hidden")
+def hide(elem): elem.classList.add("hidden")
+
+async def show_sequence():
+    for card in sequence:
+        img = d.createElement("img"); img.src = card["src"]; img.className="card"
+        img_box.appendChild(img)
+        await asyncio.sleep(DISPLAY_MS/1000)
+        img_box.removeChild(img)
+
+def build_buttons():
+    btn_box.innerHTML = ""
+    targets = sequence.copy()
+    for card in random.sample(sequence,len(sequence)):
+        b = d.createElement("button")
+        b.textContent = card["name"]; b.className="choice"
+        async def handler(evt, c=card, t=targets):
+            if c == t[0]:
+                evt.target.classList.add("right")
+                t.pop(0)
+                if not t:  # 라운드 클리어
+                    await asyncio.sleep(.3)
+                    btn_box.classList.add("hidden")
+                    next_round()
+            else:
+                evt.target.classList.add("wrong")
+                end_game()
+        b.onclick = handler
+        btn_box.appendChild(b)
+    btn_box.classList.remove("hidden")
+
+def update_score():
+    scoretxt.textContent = f"점수 {player['score']} 점"
+
+def next_round():
+    global round_n, sequence
+    round_n += 1
+    if round_n > ROUNDS_MAX:
+        end_game(); return
+    # 난이도 ↑ : 라운드 수만큼 이미지 사용
+    sequence = random.sample(IMAGES, k=round_n+2)
+    player['score'] += POINTS_EACH
+    update_score()
+    asyncio.ensure_future(run_round())
+
+async def run_round():
+    await asyncio.sleep(.5)
+    await show_sequence()
+    build_buttons()
+
+###########
+#  시작   #
+###########
+def start_game(event=None):
+    nm = name_in.value.strip() or "손님"
+    player["name"]=nm
+    greet.textContent = f"{nm}님, 화이팅!"
+    hide(start_p); show(game_p)
+    next_round()
+
+d["start-btn"].onclick = start_game
+d["end-btn"].onclick = lambda evt: asyncio.ensure_future(end_game())
+
+###########
+#  종료   #
+###########
+async def end_game():
+    hide(game_p); show(rank_p)
+    finaltxt.textContent = f"🧑‍🚀 {player['name']} 님 점수: {player['score']} 점"
+    await save_and_show_ranking()
+
+async def save_and_show_ranking(): 
+    today = date.today()
+    week  = iso_week_str(today)
+
+        # 1️⃣ Supabase에 점수 기록
+    await store_score(player['name'], player['score'])
+
+        # 2️⃣ 랭킹 받아오기
+    today_rank, week_rank = await fetch_leaderboards()
+
+    # 3️⃣ 화면에 출력
+    def fill_list(arr, ul):
+        ul.innerHTML=""
+        for r in arr:
+            li = d.createElement("li")
+            li.textContent = f"{r['name']} — {r['score']}점"
+            ul.appendChild(li)
+    fill_list(today_rank, today_ul)
+    fill_list(week_rank , week_ul)
+
+    # 점수 저장
+async def store_score(name:str, score:int):
+    data = to_js({"name": name, "score": score})
+    res  = await supa.from_("scores").insert(data).select().execute()
+    if res.error:
+        js.console.error(res.error)
+
+# 오늘 & 이번 주 TOP 5
+async def fetch_leaderboards():
+    today_iso = date.today().isoformat()          # '2025-06-22'
+    y,w,_     = date.today().isocalendar()
+    week_iso  = f"{y}-{w:02d}"                    # '2025-25'
+
+    today_r = await (supa.from_("scores")
+                     .select("*")
+                     .eq("created_at::date", today_iso)
+                     .order("score", {"ascending": False})
+                     .limit(5)
+                     .execute())
+
+    week_r  = await (supa.from_("scores")
+                     .select("*")
+                     .like("to_char(created_at,'IYYY-IW')", week_iso)
+                     .order("score", {"ascending": False})
+                     .limit(5)
+                     .execute())
+
+    return today_r.data or [], week_r.data or []
+  </py-script>
+
+  <!-- ─── 간단 CSS (inline 넣어도 상관없음) ─── -->
+  <style>
+  *{box-sizing:border-box}
+  body{font-family:'Pretendard','Noto Sans KR',sans-serif;margin:0;padding:2rem;text-align:center}
+  input,button{padding:.6rem 1rem;font-size:1rem;border-radius:8px;border:1px solid #ccc}
+  button{cursor:pointer}
+  #image-area{height:240px;display:flex;justify-content:center;align-items:center;margin-bottom:1rem}
+  .card{width:200px;height:200px;border-radius:12px;object-fit:cover;box-shadow:0 4px 10px rgba(0,0,0,.2)}
+  #btn-area{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-bottom:1rem}
+  .choice{background:#f6f6f6}
+  .right{background:#6abe6a;color:#fff!important}
+  .wrong{background:#e04d4d;color:#fff!important}
+  .hidden{display:none}
+  #rank-panel ol{padding-left:1.2rem;text-align:left;display:inline-block}
+  </style>
+</body>
+</html>
