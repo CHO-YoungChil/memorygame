@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>🧠 기억력 채리지</title>
+  <title>🧠 이탈리안 브레인 기억력 챌린지 (현준,서준 Love)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="style.css">
@@ -152,7 +152,7 @@
       const [year, month, day] = today.split('-');
       const currentWeek = new Date().getFullYear() + '-' + String(getWeekNumber(new Date())).padStart(2, '0');
 
-      const todayRank = await supabase
+      const todayRank = await client
         .from('scores')
         .select('*')
         .like('created_at', `${today}%`)
