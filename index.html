@@ -3,14 +3,15 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>🧠 이탈리안 브레인 기억력 챌린지 (현준,서준 Love)</title>
+  <title>🧠 이탈리안 브레인 기억력 챌린지 </title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div id="start-panel">
-    <h1>🧠 기억력 채리지</h1>
+    <h1>🧠 기억력 챌린지 🧠 현준서준 Love</h1>
     <p>닉네임을 입력하고 시작!</p>
     <input id="player-name" placeholder="닉네임" autocomplete="off">
     <button id="start-btn">게임 시작</button>
@@ -45,10 +46,41 @@
       { src: 'br.jpg', name: '브르르 브르르 파타핌' },
       { src: 'bom.jpg', name: '봄바르디로 크로코딜로' },
       { src: 'bone.jpg', name: '보네카 암발라부' },
-      { src: 'ririr.jpg', name: '리릴리 라랄라' },
+      { src: 'ririr.jpg', name: '리릴리 라릴라' },
+      { src: 'Chim.jpg', name: '침판지니 바나니니' },
+      { src: 'Bombom.jpg', name: '봄봄비니 구지니' },
+      { src: 'Cappu.jpg', name: '카푸치노 아사시노' },
+      { src: 'Trippi.jpg', name: '트리피 트로피' },
+      { src: 'Frigo.jpg', name: '프리고 카멜로' },
+      { src: 'LaVaca.jpg', name: '라 바카 사투르노 사투르니타' },
+      { src: 'Ballerina.jpg', name: '발레리나 카푸치나' },
+      { src: 'Udindin.jpg', name: '오 딘딘딘딘 둔 마 딘딘딘 둔' },
+      { src: 'Truli.jpg', name: '트룰리메로 트룰리치나' },
+      { src: 'Girafa.jpg', name: '지라파 첼레스테' },
+      { src: 'Bobri.jpg', name: '보브리토 반디토' },
+      { src: 'Tatata.jpg', name: '타타타타타타타타타타타 사후르' },
+      { src: 'Pot.jpg', name: '팟 핫스팟' },
+      { src: 'Frulli.jpg', name: '프룰리 프룰라' },
+      { src: 'Brribrri.jpg', name: '브리 브리 비쿠스 디쿠스 봄비쿠스' },
+      { src: 'rTricTrac.jpg', name: '트릭 트랙 바라붐' },
+      { src: 'Burbal.jpg', name: '부르발로니 룰릴롤리' },
+      { src: 'Orangut.jpg', name: '오랑구티니 아나나시니' },
+      { src: 'Garama.jpg', name: '가라마라라마라라만 단 마두둥둥 탁 툰퉁 퍼르쿤퉁' },
+      { src: 'ilcacto.jpg', name: '일 칵토 히포포타모' },
+      { src: 'Blueberri.jpg', name: '블루베리니 옥토푸시니' },
+      { src: 'Glorbo.jpg', name: '글로르보 프루토드릴로' },
+      { src: 'Rhino.jpg', name: '리노 토스트리노' },
+      { src: 'Zibra.jpg', name: '지브라 주브라 지브라리니' },
+      { src: 'Graip.jpg', name: '그라이푸시 메두시' },
+      { src: 'Tigrru.jpg', name: '티그룰리니 워터멜리니' },
+      { src: 'Gorillo.jpg', name: '고릴로 워터멜론드릴로' },
+      { src: 'Bananita.jpg', name: '바나니타 돌피니타' },
+      { src: 'Cocofa.jpg', name: '코코판토 엘레판토' },
+      { src: 'Tigrulligr.jpg', name: '티그룰리 그레이프루투니' },    // 나무위키 2.37 까지 입력
+
     ];
-    const DISPLAY_MS = 1200;
-    const ROUNDS_MAX = 5;
+    const DISPLAY_MS = 1600;
+    const ROUNDS_MAX = 10;
     const POINTS_EACH = 10;
 
     const d = document;
@@ -70,6 +102,12 @@
 
     function show(elem) { elem.classList.remove('hidden'); }
     function hide(elem) { elem.classList.add('hidden'); }
+
+    function getStartOfWeek(date = new Date()) {
+      const day = date.getDay();
+      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+      return new Date(date.setDate(diff));
+    }
 
     async function showSequence() {
       for (const card of sequence) {
@@ -141,6 +179,7 @@
       finalTxt.textContent = `🧑‍🚀 ${player.name} 님 점수: ${player.score} 점`;
       await storeScore(player.name, player.score);
       await showRankings();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     async function storeScore(name, score) {
@@ -148,21 +187,27 @@
     }
 
     async function showRankings() {
-      const today = new Date().toISOString().split('T')[0];
-      const [year, month, day] = today.split('-');
-      const currentWeek = new Date().getFullYear() + '-' + String(getWeekNumber(new Date())).padStart(2, '0');
+      const today = new Date();
+      const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
+      const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
 
       const todayRank = await client
         .from('scores')
         .select('*')
-        .like('created_at', `${today}%`)
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay)
         .order('score', { ascending: false })
         .limit(5);
 
-      const weekRank = await supabase
+      const weekStart = new Date(getStartOfWeek());
+      const startOfWeek = new Date(weekStart.setHours(0, 0, 0, 0)).toISOString();
+      const endOfToday = new Date().toISOString();
+
+      const weekRank = await client
         .from('scores')
         .select('*')
-        .like("to_char(created_at,'IYYY-IW')", currentWeek)
+        .gte('created_at', startOfWeek)
+        .lte('created_at', endOfToday)
         .order('score', { ascending: false })
         .limit(5);
 
@@ -179,31 +224,42 @@
       fillList(weekUl, weekRank);
     }
 
-    function getWeekNumber(d) {
-      d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-      const dayNum = d.getUTCDay() || 7;
-      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-      return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
-    }
-
     d.getElementById('start-btn').onclick = startGame;
     d.getElementById('end-btn').onclick = endGame;
   </script>
 
   <style>
-    *{box-sizing:border-box}
-    body{font-family:'Pretendard','Noto Sans KR',sans-serif;margin:0;padding:2rem;text-align:center}
-    input,button{padding:.6rem 1rem;font-size:1rem;border-radius:8px;border:1px solid #ccc}
-    button{cursor:pointer}
-    #image-area{height:240px;display:flex;justify-content:center;align-items:center;margin-bottom:1rem}
-    .card{width:200px;height:200px;border-radius:12px;object-fit:cover;box-shadow:0 4px 10px rgba(0,0,0,.2)}
-    #btn-area{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-bottom:1rem}
-    .choice{background:#f6f6f6}
-    .right{background:#6abe6a;color:#fff!important}
-    .wrong{background:#e04d4d;color:#fff!important}
-    .hidden{display:none}
-    #rank-panel ol{padding-left:1.2rem;text-align:left;display:inline-block}
+    * { box-sizing: border-box }
+    body {
+      font-family: 'Pretendard','Noto Sans KR',sans-serif;
+      margin: 0; padding: 2rem; text-align: center;
+    }
+    input, button {
+      padding: .6rem 1rem; font-size: 1rem;
+      border-radius: 8px; border: 1px solid #ccc
+    }
+    button { cursor: pointer }
+    #image-area {
+      height: 240px; display: flex;
+      justify-content: center; align-items: center;
+      margin-bottom: 1rem
+    }
+    .card {
+      width: 200px; height: 200px;
+      border-radius: 12px; object-fit: cover;
+      box-shadow: 0 4px 10px rgba(0,0,0,.2)
+    }
+    #btn-area {
+      display: flex; gap: .5rem; flex-wrap: wrap;
+      justify-content: center; margin-bottom: 1rem
+    }
+    .choice { background: #f6f6f6 }
+    .right { background: #6abe6a; color: #fff !important }
+    .wrong { background: #e04d4d; color: #fff !important }
+    .hidden { display: none }
+    #rank-panel ol {
+      padding-left: 1.2rem; text-align: left; display: inline-block
+    }
   </style>
 </body>
 </html>
