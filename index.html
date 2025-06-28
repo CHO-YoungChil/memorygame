@@ -170,6 +170,11 @@
     }
 
     function startGame() {
+    const audio = document.getElementById('bgm');
+      audio.volume = 0.5; // 볼륨 조절 (0.0 ~ 1.0)
+      audio.play().catch(() => {
+      console.warn("자동 재생 실패: 사용자 상호작용 필요");
+    });
       player.name = nameInput.value.trim() || '손님';
       greet.textContent = `${player.name}님, 화이팅!`;
       hide(startP); show(gameP);
@@ -177,6 +182,10 @@
     }
 
     async function endGame() {
+        const audio = document.getElementById('bgm');
+      audio.pause();
+      audio.currentTime = 0;
+
       hide(gameP); show(rankP);
       finalTxt.textContent = `🧑‍🚀 ${player.name} 님 점수: ${player.score} 점`;
       await storeScore(player.name, player.score);
